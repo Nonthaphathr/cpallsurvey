@@ -102,9 +102,35 @@
         @media (max-width: 640px) {
             .radio-card .font-medium.text-lg { font-size: 1rem; }
         }
+
+        /* In-app browser warning banner */
+        #inapp-banner {
+            display: none;
+        }
+        #inapp-banner.show {
+            display: block;
+            animation: fadeIn 0.25s ease-out;
+        }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- In-app Browser Warning Banner (LINE / Messenger / etc.) -->
+    <div id="inapp-banner" class="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-3 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex items-start sm:items-center gap-3">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5 sm:mt-0"></i>
+            <div class="flex-grow text-sm leading-relaxed">
+                <span id="inapp-banner-text">คุณกำลังเปิดหน้านี้ในแอปแชท ซึ่งอาจใช้งานฟีเจอร์บางอย่างได้ไม่สมบูรณ์</span>
+                <button type="button" onclick="toggleInappHelp()" class="underline font-medium ml-1 whitespace-nowrap">ดูวิธีเปิดในเบราว์เซอร์</button>
+            </div>
+            <button type="button" onclick="dismissInappBanner()" class="flex-shrink-0 text-amber-500 hover:text-amber-700 p-1" aria-label="ปิด">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <div id="inapp-help-detail" class="hidden max-w-7xl mx-auto mt-3 pt-3 border-t border-amber-200 text-sm">
+            <!-- Populated by JS depending on detected app/OS -->
+        </div>
+    </div>
 
     <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-auto sm:h-16 py-3 sm:py-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
@@ -811,8 +837,7 @@
         }
 
         // Force any <a> links in the document to open in the system's default
-        // external browser instead of an in-app webview (relevant when this
-        // page is wrapped/embedded, e.g. LIFF, LINE in-app browser, PWA shell).
+        // external browser instead of an in-app webview where possible.
         function forceExternalLinks() {
             document.querySelectorAll('a[href]').forEach(link => {
                 link.setAttribute('target', '_blank');
@@ -823,6 +848,70 @@
         // Re-apply if new links get injected dynamically later
         const linkObserver = new MutationObserver(forceExternalLinks);
         linkObserver.observe(document.body, { childList: true, subtree: true });
+
+        // ===== In-app Browser Detection (LINE / Messenger / IG / FB) =====
+        // target="_blank"/rel cannot force these apps out of their webview —
+        // the app itself controls link handling. The reliable fallback is to
+        // detect the in-app browser and guide the user to open in a real one.
+        function detectInAppBrowser() {
+            const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+            const isLine = /Line\//i.test(ua);
+            const isFbMessenger = /FBAN|FBAV|FB_IAB|MessengerForiOS/i.test(ua);
+            const isInstagram = /Instagram/i.test(ua);
+            const isAndroid = /Android/i.test(ua);
+            const isiOS = /iPhone|iPad|iPod/i.test(ua) && !window.MSStream;
+
+            let appName = null;
+            if (isLine) appName = 'LINE';
+            else if (isFbMessenger) appName = 'Messenger';
+            else if (isInstagram) appName = 'Instagram';
+
+            if (!appName) return;
+
+            const banner = document.getElementById('inapp-banner');
+            const bannerText = document.getElementById('inapp-banner-text');
+            const helpDetail = document.getElementById('inapp-help-detail');
+
+            bannerText.textContent = `คุณกำลังเปิดหน้านี้ผ่านแอป ${appName} ซึ่งอาจบันทึกข้อมูลหรือดาวน์โหลดไฟล์ได้ไม่สมบูรณ์ แนะนำให้เปิดในเบราว์เซอร์หลัก`;
+
+            const currentUrl = window.location.href;
+            let helpHtml = '';
+
+            if (isAndroid) {
+                // Chrome Intent URL — reliably forces Chrome to open on Android
+                const intentUrl = `intent://${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+                helpHtml = `
+                    <p class="mb-2">กดปุ่มด้านล่างเพื่อเปิดหน้านี้ใน Chrome โดยตรง:</p>
+                    <a href="${intentUrl}" class="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-medium px-4 py-2 rounded-lg mb-2">
+                        <i data-lucide="chrome" class="w-4 h-4"></i> เปิดใน Chrome
+                    </a>
+                    <p class="text-amber-700">หากปุ่มไม่ทำงาน: แตะไอคอน <b>⋮</b> (จุดสามจุด) มุมขวาบน แล้วเลือก <b>"เปิดใน Chrome"</b> หรือ <b>"Open in browser"</b></p>
+                `;
+            } else if (isiOS) {
+                helpHtml = `
+                    <p class="text-amber-700">iOS ไม่รองรับการเปิดเบราว์เซอร์อัตโนมัติ กรุณาแตะไอคอน <b>⋯</b> หรือ <b>Share</b> (มุมล่างขวา/ขวาบน) แล้วเลือก <b>"Open in Safari"</b> หรือ <b>"เปิดใน Safari"</b></p>
+                `;
+            } else {
+                helpHtml = `
+                    <p class="text-amber-700">กรุณาเปิดเมนูของแอป ${appName} แล้วเลือกตัวเลือก "เปิดในเบราว์เซอร์" (Open in browser)</p>
+                `;
+            }
+
+            helpDetail.innerHTML = helpHtml;
+            banner.classList.add('show');
+            lucide.createIcons();
+        }
+
+        window.toggleInappHelp = function() {
+            const detail = document.getElementById('inapp-help-detail');
+            detail.classList.toggle('hidden');
+        };
+
+        window.dismissInappBanner = function() {
+            document.getElementById('inapp-banner').classList.remove('show');
+        };
+
+        detectInAppBrowser();
 
         // Boot up
         initApp();
