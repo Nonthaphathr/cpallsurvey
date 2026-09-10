@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>ระบบบันทึกแบบสอบถามโครงการ CPALL</title>
     
     <!-- Tailwind CSS -->
@@ -53,6 +53,18 @@
         }
         .toast-enter { animation: slideIn 0.3s forwards; }
         .toast-exit { animation: slideOut 0.3s forwards; }
+
+        /* Modal Animation */
+        @keyframes modalPop {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-pop { animation: modalPop 0.25s ease-out forwards; }
+        .modal-fade { animation: fadeIn 0.2s ease-out forwards; }
         
         /* Hide scrollbar for clean textarea */
         textarea::-webkit-scrollbar {
@@ -69,23 +81,44 @@
         textarea::-webkit-scrollbar-thumb:hover {
             background: #94a3b8; 
         }
+
+        /* Tab styles */
+        .tab-btn {
+            transition: all 0.2s ease;
+        }
+        .tab-btn.active {
+            background-color: #16a34a;
+            color: white;
+        }
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        /* Mobile-friendly tweaks */
+        @media (max-width: 640px) {
+            .radio-card .font-medium.text-lg { font-size: 1rem; }
+        }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
     <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-auto sm:h-16 py-3 sm:py-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div class="flex items-center gap-3">
-                <div class="bg-green-600 p-2 rounded-lg">
-                    <i data-lucide="clipboard-list" class="w-6 h-6 text-white"></i>
+                <div class="bg-green-600 p-2 rounded-lg flex-shrink-0">
+                    <i data-lucide="clipboard-list" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
                 </div>
                 <div>
-                    <h1 class="font-semibold text-lg leading-tight text-slate-800">ระบบบันทึกแบบสอบถาม</h1>
+                    <h1 class="font-semibold text-base sm:text-lg leading-tight text-slate-800">ระบบบันทึกแบบสอบถาม</h1>
                     <p class="text-xs text-slate-500">โครงการสนับสนุนโดย บริษัท ซีพี ออลล์ จำกัด (มหาชน)</p>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <div id="connection-status" class="flex items-center gap-2 text-sm text-slate-500">
+            <div class="flex items-center gap-4 self-end sm:self-auto">
+                <div id="connection-status" class="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
                     <span class="relative flex h-3 w-3">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                       <span class="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
@@ -94,171 +127,185 @@
                 </div>
             </div>
         </div>
+
+        <!-- Tab Navigation -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-3">
+            <div class="flex gap-2 bg-slate-100 p-1 rounded-xl w-full sm:w-fit">
+                <button type="button" id="tab-btn-form" onclick="switchTab('form')" class="tab-btn active flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm text-slate-600">
+                    <i data-lucide="file-pen-line" class="w-4 h-4"></i>
+                    <span>บันทึกข้อมูล</span>
+                </button>
+                <button type="button" id="tab-btn-stats" onclick="switchTab('stats')" class="tab-btn flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm text-slate-600">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    <span>สถิติ &amp; รายงาน</span>
+                </button>
+            </div>
+        </div>
     </header>
 
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            <!-- LEFT COLUMN: Data Entry Form -->
-            <div class="lg:col-span-7 space-y-6">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
-                    <h2 class="text-xl font-semibold mb-6 flex items-center gap-2 border-b pb-4">
-                        <i data-lucide="file-pen-line" class="w-5 h-5 text-green-600"></i>
-                        ฟอร์มบันทึกข้อมูลจากกระดาษ
-                    </h2>
-                    
-                    <form id="survey-form" class="space-y-8">
-                        
-                        <!-- Q1 -->
-                        <div class="space-y-3">
-                            <label class="block text-base font-medium text-slate-700">
-                                1. ท่านทราบหรือไม่ ว่าบริษัท ซีพี ออลล์ (จำกัด) มหาชน เป็นผู้สนับสนุนโครงการ
-                                <span class="text-red-500">*</span>
-                            </label>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <label class="radio-card cursor-pointer relative">
-                                    <input type="radio" name="q1_awareness" value="ทราบ" class="peer sr-only" required>
-                                    <div class="rounded-xl border-2 border-slate-200 p-4 hover:bg-slate-50 transition-all flex items-center justify-between">
-                                        <span class="font-medium text-lg">ทราบ</span>
-                                        <i data-lucide="check-circle-2" class="icon-check w-6 h-6 opacity-0 transition-opacity"></i>
-                                    </div>
-                                </label>
-                                <label class="radio-card cursor-pointer relative">
-                                    <input type="radio" name="q1_awareness" value="ไม่ทราบ" class="peer sr-only">
-                                    <div class="rounded-xl border-2 border-slate-200 p-4 hover:bg-slate-50 transition-all flex items-center justify-between">
-                                        <span class="font-medium text-lg">ไม่ทราบ</span>
-                                        <i data-lucide="check-circle-2" class="icon-check w-6 h-6 opacity-0 transition-opacity"></i>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full">
 
-                        <!-- Q2 -->
-                        <div class="space-y-3">
-                            <label class="block text-base font-medium text-slate-700">
-                                2. ความพึงพอใจที่มีต่อโครงการ
-                                <span class="text-red-500">*</span>
-                            </label>
-                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                                <label class="radio-card cursor-pointer relative">
-                                    <input type="radio" name="q2_satisfaction" value="5" class="peer sr-only" required>
-                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
-                                        <span class="font-medium">มากที่สุด</span>
-                                        <span class="text-xs opacity-75">(5)</span>
-                                    </div>
-                                </label>
-                                <label class="radio-card cursor-pointer relative">
-                                    <input type="radio" name="q2_satisfaction" value="4" class="peer sr-only">
-                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
-                                        <span class="font-medium">มาก</span>
-                                        <span class="text-xs opacity-75">(4)</span>
-                                    </div>
-                                </label>
-                                <label class="radio-card cursor-pointer relative">
-                                    <input type="radio" name="q2_satisfaction" value="3" class="peer sr-only">
-                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
-                                        <span class="font-medium">ปานกลาง</span>
-                                        <span class="text-xs opacity-75">(3)</span>
-                                    </div>
-                                </label>
-                                <label class="radio-card cursor-pointer relative">
-                                    <input type="radio" name="q2_satisfaction" value="2" class="peer sr-only">
-                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
-                                        <span class="font-medium">น้อย</span>
-                                        <span class="text-xs opacity-75">(2)</span>
-                                    </div>
-                                </label>
-                                <label class="radio-card cursor-pointer relative col-span-2 sm:col-span-1">
-                                    <input type="radio" name="q2_satisfaction" value="1" class="peer sr-only">
-                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
-                                        <span class="font-medium">น้อยที่สุด</span>
-                                        <span class="text-xs opacity-75">(1)</span>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Q3 -->
-                        <div class="space-y-3">
-                            <label class="block text-base font-medium text-slate-700">
-                                3. ประโยชน์ที่ท่านได้รับจากโครงการ
-                                <span class="text-red-500">*</span>
-                            </label>
-                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                                <label class="radio-card cursor-pointer relative">
-                                    <input type="radio" name="q3_benefit" value="5" class="peer sr-only" required>
-                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
-                                        <span class="font-medium">มากที่สุด</span>
-                                        <span class="text-xs opacity-75">(5)</span>
-                                    </div>
-                                </label>
-                                <label class="radio-card cursor-pointer relative">
-                                    <input type="radio" name="q3_benefit" value="4" class="peer sr-only">
-                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
-                                        <span class="font-medium">มาก</span>
-                                        <span class="text-xs opacity-75">(4)</span>
-                                    </div>
-                                </label>
-                                <label class="radio-card cursor-pointer relative">
-                                    <input type="radio" name="q3_benefit" value="3" class="peer sr-only">
-                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
-                                        <span class="font-medium">ปานกลาง</span>
-                                        <span class="text-xs opacity-75">(3)</span>
-                                    </div>
-                                </label>
-                                <label class="radio-card cursor-pointer relative">
-                                    <input type="radio" name="q3_benefit" value="2" class="peer sr-only">
-                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
-                                        <span class="font-medium">น้อย</span>
-                                        <span class="text-xs opacity-75">(2)</span>
-                                    </div>
-                                </label>
-                                <label class="radio-card cursor-pointer relative col-span-2 sm:col-span-1">
-                                    <input type="radio" name="q3_benefit" value="1" class="peer sr-only">
-                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
-                                        <span class="font-medium">น้อยที่สุด</span>
-                                        <span class="text-xs opacity-75">(1)</span>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Q4 -->
-                        <div class="space-y-3">
-                            <label for="q4_suggestion" class="block text-base font-medium text-slate-700">
-                                4. ข้อเสนอแนะที่มีต่อโครงการ (ถ้ามี)
-                            </label>
-                            <textarea id="q4_suggestion" name="q4_suggestion" rows="3" 
-                                class="w-full rounded-xl border-2 border-slate-200 p-4 focus:border-green-500 focus:ring-0 outline-none transition-colors"
-                                placeholder="พิมพ์ข้อเสนอแนะเพิ่มเติม..."></textarea>
-                        </div>
-
-                        <!-- Submit Button -->
-                        <div class="pt-4">
-                            <button type="submit" id="btn-submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed">
-                                <i data-lucide="save" class="w-5 h-5"></i>
-                                <span>บันทึกข้อมูลแบบสอบถาม</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- RIGHT COLUMN: Dashboard & Actions -->
-            <div class="lg:col-span-5 space-y-6">
+        <!-- TAB PANEL: Data Entry Form -->
+        <div id="tab-panel-form" class="tab-panel active">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-8">
+                <h2 class="text-lg sm:text-xl font-semibold mb-6 flex items-center gap-2 border-b pb-4">
+                    <i data-lucide="file-pen-line" class="w-5 h-5 text-green-600"></i>
+                    ฟอร์มบันทึกข้อมูลจากกระดาษ
+                </h2>
                 
+                <form id="survey-form" class="space-y-8">
+                    
+                    <!-- Q1 -->
+                    <div class="space-y-3">
+                        <label class="block text-base font-medium text-slate-700">
+                            1. ท่านทราบหรือไม่ ว่าบริษัท ซีพี ออลล์ (จำกัด) มหาชน เป็นผู้สนับสนุนโครงการ
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="radio-card cursor-pointer relative">
+                                <input type="radio" name="q1_awareness" value="ทราบ" class="peer sr-only" required>
+                                <div class="rounded-xl border-2 border-slate-200 p-4 hover:bg-slate-50 transition-all flex items-center justify-between active:scale-[0.98]">
+                                    <span class="font-medium text-base sm:text-lg">ทราบ</span>
+                                    <i data-lucide="check-circle-2" class="icon-check w-6 h-6 opacity-0 transition-opacity"></i>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer relative">
+                                <input type="radio" name="q1_awareness" value="ไม่ทราบ" class="peer sr-only">
+                                <div class="rounded-xl border-2 border-slate-200 p-4 hover:bg-slate-50 transition-all flex items-center justify-between active:scale-[0.98]">
+                                    <span class="font-medium text-base sm:text-lg">ไม่ทราบ</span>
+                                    <i data-lucide="check-circle-2" class="icon-check w-6 h-6 opacity-0 transition-opacity"></i>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Q2 -->
+                    <div class="space-y-3">
+                        <label class="block text-base font-medium text-slate-700">
+                            2. ความพึงพอใจที่มีต่อโครงการ
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            <label class="radio-card cursor-pointer relative">
+                                <input type="radio" name="q2_satisfaction" value="5" class="peer sr-only" required>
+                                <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center active:scale-[0.98]">
+                                    <span class="font-medium">มากที่สุด</span>
+                                    <span class="text-xs opacity-75">(5)</span>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer relative">
+                                <input type="radio" name="q2_satisfaction" value="4" class="peer sr-only">
+                                <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center active:scale-[0.98]">
+                                    <span class="font-medium">มาก</span>
+                                    <span class="text-xs opacity-75">(4)</span>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer relative">
+                                <input type="radio" name="q2_satisfaction" value="3" class="peer sr-only">
+                                <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center active:scale-[0.98]">
+                                    <span class="font-medium">ปานกลาง</span>
+                                    <span class="text-xs opacity-75">(3)</span>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer relative">
+                                <input type="radio" name="q2_satisfaction" value="2" class="peer sr-only">
+                                <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center active:scale-[0.98]">
+                                    <span class="font-medium">น้อย</span>
+                                    <span class="text-xs opacity-75">(2)</span>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer relative col-span-2 sm:col-span-1">
+                                <input type="radio" name="q2_satisfaction" value="1" class="peer sr-only">
+                                <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center active:scale-[0.98]">
+                                    <span class="font-medium">น้อยที่สุด</span>
+                                    <span class="text-xs opacity-75">(1)</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Q3 -->
+                    <div class="space-y-3">
+                        <label class="block text-base font-medium text-slate-700">
+                            3. ประโยชน์ที่ท่านได้รับจากโครงการ
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            <label class="radio-card cursor-pointer relative">
+                                <input type="radio" name="q3_benefit" value="5" class="peer sr-only" required>
+                                <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center active:scale-[0.98]">
+                                    <span class="font-medium">มากที่สุด</span>
+                                    <span class="text-xs opacity-75">(5)</span>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer relative">
+                                <input type="radio" name="q3_benefit" value="4" class="peer sr-only">
+                                <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center active:scale-[0.98]">
+                                    <span class="font-medium">มาก</span>
+                                    <span class="text-xs opacity-75">(4)</span>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer relative">
+                                <input type="radio" name="q3_benefit" value="3" class="peer sr-only">
+                                <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center active:scale-[0.98]">
+                                    <span class="font-medium">ปานกลาง</span>
+                                    <span class="text-xs opacity-75">(3)</span>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer relative">
+                                <input type="radio" name="q3_benefit" value="2" class="peer sr-only">
+                                <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center active:scale-[0.98]">
+                                    <span class="font-medium">น้อย</span>
+                                    <span class="text-xs opacity-75">(2)</span>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer relative col-span-2 sm:col-span-1">
+                                <input type="radio" name="q3_benefit" value="1" class="peer sr-only">
+                                <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center active:scale-[0.98]">
+                                    <span class="font-medium">น้อยที่สุด</span>
+                                    <span class="text-xs opacity-75">(1)</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Q4 -->
+                    <div class="space-y-3">
+                        <label for="q4_suggestion" class="block text-base font-medium text-slate-700">
+                            4. ข้อเสนอแนะที่มีต่อโครงการ (ถ้ามี)
+                        </label>
+                        <textarea id="q4_suggestion" name="q4_suggestion" rows="3" 
+                            class="w-full rounded-xl border-2 border-slate-200 p-4 focus:border-green-500 focus:ring-0 outline-none transition-colors text-base"
+                            placeholder="พิมพ์ข้อเสนอแนะเพิ่มเติม..."></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-4">
+                        <button type="submit" id="btn-submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 text-base sm:text-lg disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.99]">
+                            <i data-lucide="save" class="w-5 h-5"></i>
+                            <span>บันทึกข้อมูลแบบสอบถาม</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB PANEL: Stats & Reports -->
+        <div id="tab-panel-stats" class="tab-panel">
+            <div class="space-y-6">
+
                 <!-- Actions Card -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
                     <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
                         <i data-lucide="download" class="w-5 h-5 text-blue-600"></i>
                         การจัดการและรายงานผล
                     </h3>
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="exportToExcel()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-medium py-3 px-4 rounded-xl transition-colors flex flex-col items-center justify-center gap-2">
+                        <button onclick="exportToExcel()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-medium py-3 px-4 rounded-xl transition-colors flex flex-col items-center justify-center gap-2 active:scale-[0.98]">
                             <i data-lucide="sheet" class="w-6 h-6"></i>
                             <span class="text-sm">Export Excel</span>
                         </button>
-                        <button onclick="exportToPDF()" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-medium py-3 px-4 rounded-xl transition-colors flex flex-col items-center justify-center gap-2">
+                        <button onclick="exportToPDF()" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-medium py-3 px-4 rounded-xl transition-colors flex flex-col items-center justify-center gap-2 active:scale-[0.98]">
                             <i data-lucide="file-text" class="w-6 h-6"></i>
                             <span class="text-sm">Export PDF</span>
                         </button>
@@ -266,13 +313,13 @@
                 </div>
 
                 <!-- Stats Dashboard -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-[calc(100%-12rem)]">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
                     <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 border-b pb-4">
                         <i data-lucide="bar-chart-3" class="w-5 h-5 text-purple-600"></i>
                         สถิติแบบ Real-time
                     </h3>
                     
-                    <div class="space-y-6 flex-grow">
+                    <div class="space-y-6">
                         
                         <!-- Total count -->
                         <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between">
@@ -315,7 +362,7 @@
                         <!-- Recent Suggestions -->
                         <div class="mt-4">
                             <h4 class="text-sm font-medium text-slate-500 mb-3">ข้อเสนอแนะล่าสุด (5 รายการ)</h4>
-                            <ul id="list-suggestions" class="space-y-2 max-h-40 overflow-y-auto pr-2 text-sm text-slate-600">
+                            <ul id="list-suggestions" class="space-y-2 max-h-60 overflow-y-auto pr-2 text-sm text-slate-600">
                                 <li class="text-center text-slate-400 italic py-2">ยังไม่มีข้อเสนอแนะ</li>
                             </ul>
                         </div>
@@ -324,6 +371,21 @@
             </div>
         </div>
     </main>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/50 modal-fade" onclick="closeSuccessModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 sm:p-8 text-center modal-pop">
+            <div class="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                <i data-lucide="check-circle-2" class="w-9 h-9 text-green-600"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-800 mb-1">บันทึกข้อมูลเรียบร้อยแล้ว</h3>
+            <p class="text-sm text-slate-500 mb-6">ระบบได้บันทึกแบบสอบถามของผู้ตอบรายนี้เรียบร้อยแล้ว</p>
+            <button onclick="closeSuccessModal()" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors active:scale-[0.98]">
+                ตกลง บันทึกรายถัดไป
+            </button>
+        </div>
+    </div>
 
     <!-- Hidden Report Template for PDF Export -->
     <div id="pdf-container" class="fixed top-0 left-0 w-[210mm] bg-white -z-50 opacity-0 pointer-events-none p-10 pdf-font">
@@ -384,7 +446,7 @@
     </div>
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+    <div id="toast-container" class="fixed bottom-4 right-4 left-4 sm:left-auto z-50 flex flex-col gap-2 items-end"></div>
 
     <script type="module">
         // Import Firebase v11 modules
@@ -423,6 +485,42 @@
 
         // Global State for Data
         let currentSurveyData = [];
+
+        // ===== Tab Switching =====
+        window.switchTab = function(tab) {
+            const formPanel = document.getElementById('tab-panel-form');
+            const statsPanel = document.getElementById('tab-panel-stats');
+            const formBtn = document.getElementById('tab-btn-form');
+            const statsBtn = document.getElementById('tab-btn-stats');
+
+            if (tab === 'form') {
+                formPanel.classList.add('active');
+                statsPanel.classList.remove('active');
+                formBtn.classList.add('active');
+                statsBtn.classList.remove('active');
+            } else {
+                statsPanel.classList.add('active');
+                formPanel.classList.remove('active');
+                statsBtn.classList.add('active');
+                formBtn.classList.remove('active');
+            }
+        };
+
+        // ===== Success Modal =====
+        window.closeSuccessModal = function() {
+            const modal = document.getElementById('success-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        };
+
+        function openSuccessModal() {
+            const modal = document.getElementById('success-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons();
+        }
 
         // 2. Authentication and Real-time listener setup
         async function initApp() {
@@ -512,12 +610,10 @@
                 const surveysRef = collection(db, collectionPath);
                 await addDoc(surveysRef, submissionData);
 
-                // Success
+                // Success: reset form, scroll to top, show modal
                 form.reset();
-                showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
-                
-                // Focus back on Q1 for fast entry
-                document.querySelector('input[name="q1_awareness"]').focus();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                openSuccessModal();
 
             } catch (error) {
                 console.error("Save Error:", error);
@@ -685,7 +781,7 @@
             const bgColor = isSuccess ? 'bg-green-600' : 'bg-red-600';
             const icon = isSuccess ? 'check-circle' : 'alert-circle';
             
-            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 toast-enter min-w-[250px]`;
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 toast-enter w-full sm:min-w-[250px] sm:w-auto`;
             toast.innerHTML = `
                 <i data-lucide="${icon}" class="w-5 h-5 text-white"></i>
                 <span class="font-medium">${escapeHTML(message)}</span>
@@ -713,6 +809,20 @@
                 }[tag] || tag)
             );
         }
+
+        // Force any <a> links in the document to open in the system's default
+        // external browser instead of an in-app webview (relevant when this
+        // page is wrapped/embedded, e.g. LIFF, LINE in-app browser, PWA shell).
+        function forceExternalLinks() {
+            document.querySelectorAll('a[href]').forEach(link => {
+                link.setAttribute('target', '_blank');
+                link.setAttribute('rel', 'noopener noreferrer external');
+            });
+        }
+        forceExternalLinks();
+        // Re-apply if new links get injected dynamically later
+        const linkObserver = new MutationObserver(forceExternalLinks);
+        linkObserver.observe(document.body, { childList: true, subtree: true });
 
         // Boot up
         initApp();
