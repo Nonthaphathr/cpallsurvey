@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ระบบบันทึกแบบสอบถาม CPALL</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -188,15 +188,30 @@ const firebaseConfig = {
   messagingSenderId: "353130229986",
   appId: "1:353130229986:web:72204dc174a2f885b26ebb"
 };
+const $ = s => document.querySelector(s);
+function fail(msg){
+  const el=$("#conn");
+  if(el) el.innerHTML='<span class="dot" style="background:#e14"></span>'+msg;
+  const b=$("#saveBtn"); if(b) b.disabled=true;
+}
+window.addEventListener("error", e=>fail("เกิดข้อผิดพลาด: "+(e.message||e)));
+
+if(typeof firebase==="undefined"){
+  fail("โหลด Firebase SDK ไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต / ตัวบล็อกโฆษณา แล้วรีเฟรชหน้า");
+  throw new Error("Firebase SDK not loaded");
+}
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const COL = "responses";
+
+// แจ้งเตือนถ้าเชื่อมต่อไม่สำเร็จภายใน 8 วินาที
+let connected=false;
+setTimeout(()=>{ if(!connected) fail("เชื่อมต่อ Firestore ไม่สำเร็จ — ตรวจสอบว่าสร้าง Firestore Database แล้ว และตั้ง Rules ให้อนุญาต read/create"); }, 8000);
 
 /* ---------- ตัวเลือก ---------- */
 const Q1 = [["1","ทราบ"],["0","ไม่ทราบ"]];
 const LIKERT = [["5","มากที่สุด"],["4","มาก"],["3","ปานกลาง"],["2","น้อย"],["1","น้อยที่สุด"]];
 const LBL = {5:"มากที่สุด",4:"มาก",3:"ปานกลาง",2:"น้อย",1:"น้อยที่สุด"};
-const $ = s => document.querySelector(s);
 
 function radios(box, name, opts){
   box.innerHTML = opts.map(([v,t])=>
@@ -244,8 +259,8 @@ document.addEventListener("keydown", e=>{ if((e.ctrlKey||e.metaKey)&&e.key==="En
 /* ---------- เรียลไทม์ ---------- */
 let DATA=[];
 db.collection(COL).orderBy("createdAt","desc").onSnapshot(
-  s=>{ DATA = s.docs.map(d=>({id:d.id,...d.data()})); $("#conn").innerHTML='<span class="dot"></span>เชื่อมต่อแล้ว · ซิงก์อัตโนมัติ'; render(); },
-  e=>{ $("#conn").innerHTML='<span class="dot" style="background:#e14"></span>เชื่อมต่อไม่ได้: '+e.message; }
+  s=>{ connected=true; DATA = s.docs.map(d=>({id:d.id,...d.data()})); $("#conn").innerHTML='<span class="dot"></span>เชื่อมต่อแล้ว · ซิงก์อัตโนมัติ'; render(); },
+  e=>{ connected=true; fail("เชื่อมต่อไม่ได้ ("+e.code+"): "+e.message); }
 );
 
 function bars(el, items, total){
