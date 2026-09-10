@@ -1,399 +1,722 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ระบบบันทึกแบบสอบถาม CPALL</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-:root{
-  --bg:#f4f6fa; --card:#fff; --line:#e3e8f0; --txt:#16202e; --muted:#6b7787;
-  --brand:#0a7c3f; --brand2:#e8f5ee; --accent:#f26b21; --radius:14px;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--txt);font-family:"Sarabun",system-ui,sans-serif;font-size:16px}
-header{background:linear-gradient(100deg,#0a7c3f,#0f9d55);color:#fff;padding:14px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:20}
-header h1{font-size:18px;margin:0;font-weight:700;line-height:1.3}
-header .sub{font-size:12.5px;opacity:.85}
-.spacer{flex:1}
-.who{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:99px;padding:7px 14px;font-size:13.5px;cursor:pointer;font-family:inherit}
-.wrap{max-width:1180px;margin:0 auto;padding:18px}
-.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;align-items:start}
-@media(max-width:900px){.grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:0 1px 3px rgba(16,24,40,.04)}
-.card h2{margin:0 0 4px;font-size:16px}
-.card .hint{color:var(--muted);font-size:13px;margin:0 0 14px}
-.q{margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
-.q:last-of-type{border-bottom:0}
-.q>label{display:block;font-weight:600;margin-bottom:9px;font-size:15px}
-.opts{display:flex;gap:8px;flex-wrap:wrap}
-.opt{flex:1 1 auto;min-width:96px}
-.opt input{position:absolute;opacity:0;width:0;height:0}
-.opt span{display:block;text-align:center;padding:11px 8px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;font-size:14.5px;user-select:none;transition:.12s;background:#fbfcfe}
-.opt input:checked+span{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
-.opt input:focus-visible+span{outline:3px solid #9fd3b6}
-textarea,input[type=text],select{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;background:#fbfcfe}
-textarea{min-height:82px;resize:vertical}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.row>*{flex:1 1 160px}
-button.primary{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:14px 20px;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;width:100%}
-button.primary:disabled{opacity:.5}
-button.ghost{background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:9px 14px;font-family:inherit;font-size:14px;cursor:pointer}
-button.ghost:hover{border-color:var(--brand);color:var(--brand)}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-.stat{background:var(--brand2);border-radius:12px;padding:12px;text-align:center}
-.stat b{display:block;font-size:24px;color:var(--brand);line-height:1.2}
-.stat small{color:var(--muted);font-size:12px}
-.bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13.5px}
-.bar i{width:74px;font-style:normal;color:var(--muted);flex:none}
-.bar .t{flex:1;background:#eef1f6;border-radius:99px;height:16px;overflow:hidden}
-.bar .t>div{height:100%;background:linear-gradient(90deg,#0f9d55,#7bc96f);border-radius:99px;transition:width .3s}
-.bar u{text-decoration:none;width:56px;text-align:right;flex:none;font-variant-numeric:tabular-nums;color:var(--txt)}
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);background:#16202e;color:#fff;padding:12px 22px;border-radius:99px;font-size:15px;opacity:0;transition:.25s;z-index:60;pointer-events:none}
-.toast.on{opacity:1;transform:translateX(-50%)}
-.toast.err{background:#b3261e}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
-th{background:#f7f9fc;font-weight:600;position:sticky;top:0}
-.tblbox{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:10px}
-.dot{display:inline-block;width:8px;height:8px;border-radius:99px;background:#3ddc84;margin-right:6px}
-.mini{color:var(--muted);font-size:12.5px}
-dialog{border:0;border-radius:16px;padding:22px;max-width:420px;width:92%;box-shadow:0 20px 50px rgba(0,0,0,.25);font-family:inherit}
-dialog::backdrop{background:rgba(10,20,30,.45)}
-.tabs{display:flex;gap:6px;margin-bottom:14px}
-.tabs button{flex:1;padding:9px;border:1.5px solid var(--line);background:#fff;border-radius:10px;font-family:inherit;font-size:14px;cursor:pointer}
-.tabs button.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
-@media print{body{background:#fff}header,.noprint{display:none!important}.wrap{max-width:none;padding:0}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกแบบสอบถามโครงการ CPALL</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    
+    <!-- html2pdf for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        
+        .pdf-font {
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        /* Custom Radio Button Styles */
+        .radio-card input:checked + div {
+            background-color: #16a34a; /* green-600 */
+            color: white;
+            border-color: #16a34a;
+        }
+        .radio-card input:checked + div .icon-check {
+            opacity: 1;
+        }
+        
+        /* Toast Animation */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .toast-enter { animation: slideIn 0.3s forwards; }
+        .toast-exit { animation: slideOut 0.3s forwards; }
+        
+        /* Hide scrollbar for clean textarea */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
 </head>
-<body>
-<header>
-  <div>
-    <h1>ระบบบันทึกข้อมูลแบบสอบถาม CPALL</h1>
-    <div class="sub">แบบสอบถามความพึงพอใจต่อโครงการ — บริษัท ซีพี ออลล์ จำกัด (มหาชน)</div>
-  </div>
-  <div class="spacer"></div>
-  <button class="who" id="whoBtn">ผู้บันทึก: —</button>
-</header>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
-<div class="wrap">
-<div class="grid">
-
-  <!-- ==== ฟอร์มบันทึก ==== -->
-  <section class="card">
-    <h2>บันทึกแบบสอบถาม</h2>
-    <p class="hint">หยิบแบบสอบถามฉบับกระดาษ → เลือกคำตอบ → กดบันทึก (Ctrl/⌘+Enter)</p>
-    <form id="form">
-      <div class="q">
-        <label>ข้อมูลผู้ตอบ (ไม่บังคับ)</label>
-        <div class="row">
-          <select id="group">
-            <option value="">— กลุ่มผู้ตอบ —</option>
-            <option>นักเรียน</option><option>ครู/บุคลากร</option>
-            <option>ผู้ปกครอง</option><option>ชุมชน/หน่วยงานภายนอก</option><option>อื่น ๆ</option>
-          </select>
-          <input type="text" id="refNo" placeholder="เลขที่ฉบับ (ถ้ามี)">
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-green-600 p-2 rounded-lg">
+                    <i data-lucide="clipboard-list" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-semibold text-lg leading-tight text-slate-800">ระบบบันทึกแบบสอบถาม</h1>
+                    <p class="text-xs text-slate-500">โครงการสนับสนุนโดย บริษัท ซีพี ออลล์ จำกัด (มหาชน)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="connection-status" class="flex items-center gap-2 text-sm text-slate-500">
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                    </span>
+                    กำลังเชื่อมต่อ...
+                </div>
+            </div>
         </div>
-      </div>
+    </header>
 
-      <div class="q">
-        <label>1. ท่านทราบหรือไม่ ว่าบริษัท ซีพี ออลล์ (จำกัด) มหาชน เป็นผู้สนับสนุนโครงการ</label>
-        <div class="opts" id="q1"></div>
-      </div>
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT COLUMN: Data Entry Form -->
+            <div class="lg:col-span-7 space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+                    <h2 class="text-xl font-semibold mb-6 flex items-center gap-2 border-b pb-4">
+                        <i data-lucide="file-pen-line" class="w-5 h-5 text-green-600"></i>
+                        ฟอร์มบันทึกข้อมูลจากกระดาษ
+                    </h2>
+                    
+                    <form id="survey-form" class="space-y-8">
+                        
+                        <!-- Q1 -->
+                        <div class="space-y-3">
+                            <label class="block text-base font-medium text-slate-700">
+                                1. ท่านทราบหรือไม่ ว่าบริษัท ซีพี ออลล์ (จำกัด) มหาชน เป็นผู้สนับสนุนโครงการ
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <label class="radio-card cursor-pointer relative">
+                                    <input type="radio" name="q1_awareness" value="ทราบ" class="peer sr-only" required>
+                                    <div class="rounded-xl border-2 border-slate-200 p-4 hover:bg-slate-50 transition-all flex items-center justify-between">
+                                        <span class="font-medium text-lg">ทราบ</span>
+                                        <i data-lucide="check-circle-2" class="icon-check w-6 h-6 opacity-0 transition-opacity"></i>
+                                    </div>
+                                </label>
+                                <label class="radio-card cursor-pointer relative">
+                                    <input type="radio" name="q1_awareness" value="ไม่ทราบ" class="peer sr-only">
+                                    <div class="rounded-xl border-2 border-slate-200 p-4 hover:bg-slate-50 transition-all flex items-center justify-between">
+                                        <span class="font-medium text-lg">ไม่ทราบ</span>
+                                        <i data-lucide="check-circle-2" class="icon-check w-6 h-6 opacity-0 transition-opacity"></i>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
 
-      <div class="q">
-        <label>2. ความพึงพอใจที่มีต่อโครงการ</label>
-        <div class="opts" id="q2"></div>
-      </div>
+                        <!-- Q2 -->
+                        <div class="space-y-3">
+                            <label class="block text-base font-medium text-slate-700">
+                                2. ความพึงพอใจที่มีต่อโครงการ
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                <label class="radio-card cursor-pointer relative">
+                                    <input type="radio" name="q2_satisfaction" value="5" class="peer sr-only" required>
+                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
+                                        <span class="font-medium">มากที่สุด</span>
+                                        <span class="text-xs opacity-75">(5)</span>
+                                    </div>
+                                </label>
+                                <label class="radio-card cursor-pointer relative">
+                                    <input type="radio" name="q2_satisfaction" value="4" class="peer sr-only">
+                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
+                                        <span class="font-medium">มาก</span>
+                                        <span class="text-xs opacity-75">(4)</span>
+                                    </div>
+                                </label>
+                                <label class="radio-card cursor-pointer relative">
+                                    <input type="radio" name="q2_satisfaction" value="3" class="peer sr-only">
+                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
+                                        <span class="font-medium">ปานกลาง</span>
+                                        <span class="text-xs opacity-75">(3)</span>
+                                    </div>
+                                </label>
+                                <label class="radio-card cursor-pointer relative">
+                                    <input type="radio" name="q2_satisfaction" value="2" class="peer sr-only">
+                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
+                                        <span class="font-medium">น้อย</span>
+                                        <span class="text-xs opacity-75">(2)</span>
+                                    </div>
+                                </label>
+                                <label class="radio-card cursor-pointer relative col-span-2 sm:col-span-1">
+                                    <input type="radio" name="q2_satisfaction" value="1" class="peer sr-only">
+                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
+                                        <span class="font-medium">น้อยที่สุด</span>
+                                        <span class="text-xs opacity-75">(1)</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
 
-      <div class="q">
-        <label>3. ประโยชน์ที่ท่านได้รับจากโครงการ</label>
-        <div class="opts" id="q3"></div>
-      </div>
+                        <!-- Q3 -->
+                        <div class="space-y-3">
+                            <label class="block text-base font-medium text-slate-700">
+                                3. ประโยชน์ที่ท่านได้รับจากโครงการ
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                <label class="radio-card cursor-pointer relative">
+                                    <input type="radio" name="q3_benefit" value="5" class="peer sr-only" required>
+                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
+                                        <span class="font-medium">มากที่สุด</span>
+                                        <span class="text-xs opacity-75">(5)</span>
+                                    </div>
+                                </label>
+                                <label class="radio-card cursor-pointer relative">
+                                    <input type="radio" name="q3_benefit" value="4" class="peer sr-only">
+                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
+                                        <span class="font-medium">มาก</span>
+                                        <span class="text-xs opacity-75">(4)</span>
+                                    </div>
+                                </label>
+                                <label class="radio-card cursor-pointer relative">
+                                    <input type="radio" name="q3_benefit" value="3" class="peer sr-only">
+                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
+                                        <span class="font-medium">ปานกลาง</span>
+                                        <span class="text-xs opacity-75">(3)</span>
+                                    </div>
+                                </label>
+                                <label class="radio-card cursor-pointer relative">
+                                    <input type="radio" name="q3_benefit" value="2" class="peer sr-only">
+                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
+                                        <span class="font-medium">น้อย</span>
+                                        <span class="text-xs opacity-75">(2)</span>
+                                    </div>
+                                </label>
+                                <label class="radio-card cursor-pointer relative col-span-2 sm:col-span-1">
+                                    <input type="radio" name="q3_benefit" value="1" class="peer sr-only">
+                                    <div class="rounded-lg border-2 border-slate-200 p-3 text-center hover:bg-slate-50 transition-all h-full flex flex-col justify-center">
+                                        <span class="font-medium">น้อยที่สุด</span>
+                                        <span class="text-xs opacity-75">(1)</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
 
-      <div class="q">
-        <label>4. ข้อเสนอแนะที่มีต่อโครงการ</label>
-        <textarea id="q4" placeholder="พิมพ์ข้อเสนอแนะตามที่เขียนไว้ (ถ้าไม่มี เว้นว่าง)"></textarea>
-      </div>
+                        <!-- Q4 -->
+                        <div class="space-y-3">
+                            <label for="q4_suggestion" class="block text-base font-medium text-slate-700">
+                                4. ข้อเสนอแนะที่มีต่อโครงการ (ถ้ามี)
+                            </label>
+                            <textarea id="q4_suggestion" name="q4_suggestion" rows="3" 
+                                class="w-full rounded-xl border-2 border-slate-200 p-4 focus:border-green-500 focus:ring-0 outline-none transition-colors"
+                                placeholder="พิมพ์ข้อเสนอแนะเพิ่มเติม..."></textarea>
+                        </div>
 
-      <button type="submit" class="primary" id="saveBtn">บันทึกข้อมูล</button>
-      <p class="mini" style="text-align:center;margin:10px 0 0" id="conn"><span class="dot"></span>กำลังเชื่อมต่อฐานข้อมูล…</p>
-    </form>
-  </section>
+                        <!-- Submit Button -->
+                        <div class="pt-4">
+                            <button type="submit" id="btn-submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed">
+                                <i data-lucide="save" class="w-5 h-5"></i>
+                                <span>บันทึกข้อมูลแบบสอบถาม</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-  <!-- ==== สรุปสถิติ ==== -->
-  <section class="card">
-    <h2>สรุปแบบเรียลไทม์</h2>
-    <p class="hint">อัปเดตอัตโนมัติเมื่อมีผู้บันทึกพร้อมกันหลายเครื่อง</p>
+            <!-- RIGHT COLUMN: Dashboard & Actions -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Actions Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i data-lucide="download" class="w-5 h-5 text-blue-600"></i>
+                        การจัดการและรายงานผล
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="exportToExcel()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-medium py-3 px-4 rounded-xl transition-colors flex flex-col items-center justify-center gap-2">
+                            <i data-lucide="sheet" class="w-6 h-6"></i>
+                            <span class="text-sm">Export Excel</span>
+                        </button>
+                        <button onclick="exportToPDF()" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-medium py-3 px-4 rounded-xl transition-colors flex flex-col items-center justify-center gap-2">
+                            <i data-lucide="file-text" class="w-6 h-6"></i>
+                            <span class="text-sm">Export PDF</span>
+                        </button>
+                    </div>
+                </div>
 
-    <div class="stats">
-      <div class="stat"><b id="sTotal">0</b><small>ฉบับทั้งหมด</small></div>
-      <div class="stat"><b id="sMine">0</b><small>ฉันบันทึก</small></div>
-      <div class="stat"><b id="sAvg">0.00</b><small>พึงพอใจเฉลี่ย</small></div>
+                <!-- Stats Dashboard -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-[calc(100%-12rem)]">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 border-b pb-4">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5 text-purple-600"></i>
+                        สถิติแบบ Real-time
+                    </h3>
+                    
+                    <div class="space-y-6 flex-grow">
+                        
+                        <!-- Total count -->
+                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between">
+                            <span class="text-slate-600 font-medium">จำนวนผู้ตอบแบบสอบถามรวม</span>
+                            <div class="flex items-baseline gap-1">
+                                <span id="stat-total" class="text-3xl font-bold text-slate-800">0</span>
+                                <span class="text-sm text-slate-500">ชุด</span>
+                            </div>
+                        </div>
+
+                        <!-- Q1 Stat -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm font-medium">
+                                <span class="text-slate-700">การรับรู้ว่าเป็นผู้สนับสนุน (ทราบ)</span>
+                                <span id="stat-aware-percent" class="text-green-600">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2.5">
+                                <div id="stat-aware-bar" class="bg-green-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Q2 & Q3 Averages -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-orange-50 rounded-xl p-4 border border-orange-100 text-center">
+                                <div class="text-xs text-orange-600 font-medium mb-1">ความพึงพอใจเฉลี่ย</div>
+                                <div class="flex items-center justify-center gap-1">
+                                    <span id="stat-sat-avg" class="text-2xl font-bold text-orange-700">0.0</span>
+                                    <span class="text-sm text-orange-500">/ 5</span>
+                                </div>
+                            </div>
+                            <div class="bg-blue-50 rounded-xl p-4 border border-blue-100 text-center">
+                                <div class="text-xs text-blue-600 font-medium mb-1">ประโยชน์ที่ได้รับเฉลี่ย</div>
+                                <div class="flex items-center justify-center gap-1">
+                                    <span id="stat-ben-avg" class="text-2xl font-bold text-blue-700">0.0</span>
+                                    <span class="text-sm text-blue-500">/ 5</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Suggestions -->
+                        <div class="mt-4">
+                            <h4 class="text-sm font-medium text-slate-500 mb-3">ข้อเสนอแนะล่าสุด (5 รายการ)</h4>
+                            <ul id="list-suggestions" class="space-y-2 max-h-40 overflow-y-auto pr-2 text-sm text-slate-600">
+                                <li class="text-center text-slate-400 italic py-2">ยังไม่มีข้อเสนอแนะ</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Hidden Report Template for PDF Export -->
+    <div id="pdf-container" class="fixed top-0 left-0 w-[210mm] bg-white -z-50 opacity-0 pointer-events-none p-10 pdf-font">
+        <div id="pdf-content">
+            <div class="text-center mb-8 border-b-2 border-slate-800 pb-6">
+                <h1 class="text-2xl font-bold text-slate-900 mb-2">รายงานสรุปผลการดำเนินโครงการ</h1>
+                <p class="text-lg text-slate-700">ผู้สนับสนุน: บริษัท ซีพี ออลล์ จำกัด (มหาชน)</p>
+                <p class="text-sm text-slate-500 mt-2" id="pdf-date">วันที่ออกรายงาน: -</p>
+            </div>
+            
+            <div class="mb-8 bg-slate-50 p-6 rounded-lg border border-slate-200">
+                <h2 class="text-xl font-bold mb-4">ข้อมูลภาพรวม (Overview)</h2>
+                <div class="grid grid-cols-2 gap-4 text-lg">
+                    <div>ผู้ตอบแบบสอบถามทั้งหมด:</div>
+                    <div class="font-bold text-right"><span id="pdf-total">0</span> คน</div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4">ผลการประเมิน (Assessment Results)</h2>
+                <table class="w-full border-collapse border border-slate-300 text-base">
+                    <thead>
+                        <tr class="bg-slate-100">
+                            <th class="border border-slate-300 p-3 text-left w-3/4">หัวข้อการประเมิน</th>
+                            <th class="border border-slate-300 p-3 text-center">ผลลัพธ์</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border border-slate-300 p-3">1. สัดส่วนผู้ที่รับรู้ว่าบริษัทฯ เป็นผู้สนับสนุนโครงการ</td>
+                            <td class="border border-slate-300 p-3 text-center font-bold text-green-700" id="pdf-aware">0%</td>
+                        </tr>
+                        <tr>
+                            <td class="border border-slate-300 p-3">2. ระดับความพึงพอใจที่มีต่อโครงการ (คะแนนเต็ม 5)</td>
+                            <td class="border border-slate-300 p-3 text-center font-bold" id="pdf-sat">0.00</td>
+                        </tr>
+                        <tr>
+                            <td class="border border-slate-300 p-3">3. ระดับประโยชน์ที่ได้รับจากโครงการ (คะแนนเต็ม 5)</td>
+                            <td class="border border-slate-300 p-3 text-center font-bold" id="pdf-ben">0.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div>
+                <h2 class="text-xl font-bold mb-4">สรุปข้อเสนอแนะ (Suggestions Summary)</h2>
+                <p class="text-base text-slate-700 mb-2">ข้อเสนอแนะที่พบบ่อยและน่าสนใจจากผู้ประเมิน:</p>
+                <ul id="pdf-suggestions" class="list-disc pl-6 space-y-2 text-base text-slate-700">
+                    <!-- Suggestions will be injected here -->
+                </ul>
+            </div>
+            
+            <div class="mt-16 text-center text-sm text-slate-500">
+                <p>รายงานฉบับนี้ถูกสร้างขึ้นโดยอัตโนมัติจากระบบฐานข้อมูล</p>
+                <p>ข้อมูล ณ วันที่ <span id="pdf-footer-date"></span></p>
+            </div>
+        </div>
     </div>
 
-    <div class="tabs">
-      <button type="button" class="on" data-tab="sum">สถิติ</button>
-      <button type="button" data-tab="list">รายการ</button>
-      <button type="button" data-tab="cmt">ข้อเสนอแนะ</button>
-    </div>
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
-    <div id="tab-sum">
-      <p style="font-weight:600;margin:12px 0 4px;font-size:14.5px">ข้อ 1 การรับรู้ผู้สนับสนุน</p>
-      <div id="b1"></div>
-      <p style="font-weight:600;margin:14px 0 4px;font-size:14.5px">ข้อ 2 ความพึงพอใจ <span class="mini" id="m2"></span></p>
-      <div id="b2"></div>
-      <p style="font-weight:600;margin:14px 0 4px;font-size:14.5px">ข้อ 3 ประโยชน์ที่ได้รับ <span class="mini" id="m3"></span></p>
-      <div id="b3"></div>
-    </div>
+    <script type="module">
+        // Import Firebase v11 modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <div id="tab-list" hidden>
-      <div class="tblbox"><table><thead><tr><th>#</th><th>กลุ่ม</th><th>ข้อ1</th><th>ข้อ2</th><th>ข้อ3</th><th>ผู้บันทึก</th></tr></thead><tbody id="rows"></tbody></table></div>
-    </div>
+        // Initialize Lucide Icons
+        lucide.createIcons();
 
-    <div id="tab-cmt" hidden>
-      <div class="tblbox" style="padding:4px 10px" id="cmts"></div>
-    </div>
+        // 1. Setup Firebase Configuration
+        // Using the user's provided config for their GitHub Pages deployment.
+        const userProvidedConfig = {
+            apiKey: "AIzaSyDpaFrHt9CJ4F8QMEE6QxmCY8F16brWRGw",
+            authDomain: "cpallsurveywannatharn.firebaseapp.com",
+            projectId: "cpallsurveywannatharn",
+            storageBucket: "cpallsurveywannatharn.firebasestorage.app",
+            messagingSenderId: "353130229986",
+            appId: "1:353130229986:web:72204dc174a2f885b26ebb"
+        };
+        
+        // Handle Immersive environment vs standard web deployment
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userProvidedConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // **IMPORTANT:** Use specific path for Immersive IDE to prevent permission errors, 
+        // but use standard root path for the user's actual GitHub Pages deployment.
+        const collectionPath = typeof __firebase_config !== 'undefined' 
+            ? `artifacts/${appId}/public/data/surveys` 
+            : `surveys`;
 
-    <div class="row noprint" style="margin-top:16px">
-      <button class="ghost" id="btnXlsx">⬇ ส่งออก Excel (.xlsx)</button>
-      <button class="ghost" id="btnPdf">🖨 รายงาน PDF</button>
-    </div>
-  </section>
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-</div>
-</div>
+        // Global State for Data
+        let currentSurveyData = [];
 
-<div class="toast" id="toast"></div>
+        // 2. Authentication and Real-time listener setup
+        async function initApp() {
+            try {
+                // Anonymous auth is required before database operations
+                await signInAnonymously(auth);
+                updateConnectionStatus(true);
+                
+                // Set up real-time listener (No complex queries used as per rules)
+                const surveysRef = collection(db, collectionPath);
+                
+                onSnapshot(surveysRef, (snapshot) => {
+                    const data = [];
+                    snapshot.forEach((doc) => {
+                        data.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    // Sort data by timestamp in JS memory
+                    data.sort((a, b) => {
+                        return new Date(b.timestamp || 0) - new Date(a.timestamp || 0);
+                    });
+                    
+                    currentSurveyData = data;
+                    updateDashboard(data);
+                }, (error) => {
+                    console.error("Firestore Error:", error);
+                    showToast("ไม่สามารถโหลดข้อมูลสถิติได้", "error");
+                });
 
-<dialog id="dlgWho">
-  <h3 style="margin:0 0 6px">ระบุชื่อผู้บันทึกข้อมูล</h3>
-  <p class="mini" style="margin:0 0 12px">ใช้แยกสถิติของเจ้าหน้าที่แต่ละคน</p>
-  <input type="text" id="whoIn" placeholder="เช่น นางสาวสมหญิง ใจดี">
-  <div class="row" style="margin-top:14px">
-    <button class="primary" id="whoOk" style="width:auto">ตกลง</button>
-  </div>
-</dialog>
+            } catch (error) {
+                console.error("Auth/Init Error:", error);
+                updateConnectionStatus(false);
+                showToast("การเชื่อมต่อฐานข้อมูลล้มเหลว", "error");
+            }
+        }
 
-<script>
-/* ---------- Firebase ---------- */
-const firebaseConfig = {
-  apiKey: "AIzaSyDpaFrHt9CJ4F8QMEE6QxmCY8F16brWRGw",
-  authDomain: "cpallsurveywannatharn.firebaseapp.com",
-  projectId: "cpallsurveywannatharn",
-  storageBucket: "cpallsurveywannatharn.firebasestorage.app",
-  messagingSenderId: "353130229986",
-  appId: "1:353130229986:web:72204dc174a2f885b26ebb"
-};
-const $ = s => document.querySelector(s);
-function fail(msg){
-  const el=$("#conn");
-  if(el) el.innerHTML='<span class="dot" style="background:#e14"></span>'+msg;
-  const b=$("#saveBtn"); if(b) b.disabled=true;
-}
-window.addEventListener("error", e=>fail("เกิดข้อผิดพลาด: "+(e.message||e)));
+        function updateConnectionStatus(isConnected) {
+            const statusEl = document.getElementById('connection-status');
+            if (isConnected) {
+                statusEl.innerHTML = `
+                    <span class="relative flex h-3 w-3">
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span class="text-green-600 font-medium">เชื่อมต่อระบบแล้ว</span>
+                `;
+            } else {
+                statusEl.innerHTML = `
+                    <span class="relative flex h-3 w-3">
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    <span class="text-red-600 font-medium">ขาดการเชื่อมต่อ</span>
+                `;
+            }
+        }
 
-if(typeof firebase==="undefined"){
-  fail("โหลด Firebase SDK ไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต / ตัวบล็อกโฆษณา แล้วรีเฟรชหน้า");
-  throw new Error("Firebase SDK not loaded");
-}
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const COL = "responses";
+        // 3. Form Submission Handling
+        const form = document.getElementById('survey-form');
+        const submitBtn = document.getElementById('btn-submit');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Check auth state
+            if (!auth.currentUser) {
+                showToast("กรุณารอระบบเชื่อมต่อสักครู่...", "error");
+                return;
+            }
 
-// แจ้งเตือนถ้าเชื่อมต่อไม่สำเร็จภายใน 8 วินาที
-let connected=false;
-setTimeout(()=>{ if(!connected) fail("เชื่อมต่อ Firestore ไม่สำเร็จ — ตรวจสอบว่าสร้าง Firestore Database แล้ว และตั้ง Rules ให้อนุญาต read/create"); }, 8000);
+            // Get form values
+            const formData = new FormData(form);
+            const submissionData = {
+                q1_awareness: formData.get('q1_awareness'),
+                q2_satisfaction: parseInt(formData.get('q2_satisfaction')),
+                q3_benefit: parseInt(formData.get('q3_benefit')),
+                q4_suggestion: formData.get('q4_suggestion').trim(),
+                timestamp: new Date().toISOString()
+            };
 
-/* ---------- ตัวเลือก ---------- */
-const Q1 = [["1","ทราบ"],["0","ไม่ทราบ"]];
-const LIKERT = [["5","มากที่สุด"],["4","มาก"],["3","ปานกลาง"],["2","น้อย"],["1","น้อยที่สุด"]];
-const LBL = {5:"มากที่สุด",4:"มาก",3:"ปานกลาง",2:"น้อย",1:"น้อยที่สุด"};
+            try {
+                // UI Loading state
+                submitBtn.disabled = true;
+                const originalBtnContent = submitBtn.innerHTML;
+                submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> กำลังบันทึก...`;
+                lucide.createIcons();
 
-function radios(box, name, opts){
-  box.innerHTML = opts.map(([v,t])=>
-    `<label class="opt"><input type="radio" name="${name}" value="${v}"><span>${t}</span></label>`).join("");
-}
-radios($("#q1"),"q1",Q1); radios($("#q2"),"q2",LIKERT); radios($("#q3"),"q3",LIKERT);
+                // Save to Firestore
+                const surveysRef = collection(db, collectionPath);
+                await addDoc(surveysRef, submissionData);
 
-/* ---------- ผู้บันทึก ---------- */
-let staff = localStorage.getItem("cpall_staff") || "";
-const setStaff = v => { staff=v; localStorage.setItem("cpall_staff",v); $("#whoBtn").textContent = "ผู้บันทึก: " + (v||"—"); render(); };
-setStaff(staff);
-$("#whoBtn").onclick = ()=>{ $("#whoIn").value = staff; $("#dlgWho").showModal(); };
-$("#whoOk").onclick = ()=>{ setStaff($("#whoIn").value.trim()); $("#dlgWho").close(); };
-if(!staff) setTimeout(()=>$("#dlgWho").showModal(), 400);
+                // Success
+                form.reset();
+                showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
+                
+                // Focus back on Q1 for fast entry
+                document.querySelector('input[name="q1_awareness"]').focus();
 
-/* ---------- toast ---------- */
-let tt;
-function toast(msg, err){ const t=$("#toast"); t.textContent=msg; t.className="toast on"+(err?" err":""); clearTimeout(tt); tt=setTimeout(()=>t.className="toast",2200); }
+            } catch (error) {
+                console.error("Save Error:", error);
+                showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
+            } finally {
+                // Reset UI
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> <span>บันทึกข้อมูลแบบสอบถาม</span>`;
+                lucide.createIcons();
+            }
+        });
 
-/* ---------- บันทึก ---------- */
-$("#form").addEventListener("submit", async e=>{
-  e.preventDefault();
-  const g = n => { const el=document.querySelector(`input[name=${n}]:checked`); return el?+el.value:null; };
-  const q1=g("q1"), q2=g("q2"), q3=g("q3");
-  if(q1===null||q2===null||q3===null) return toast("กรุณาเลือกคำตอบข้อ 1–3 ให้ครบ", true);
-  const btn=$("#saveBtn"); btn.disabled=true; btn.textContent="กำลังบันทึก…";
-  try{
-    await db.collection(COL).add({
-      q1,q2,q3,
-      q4: $("#q4").value.trim(),
-      group: $("#group").value,
-      refNo: $("#refNo").value.trim(),
-      staff: staff || "ไม่ระบุ",
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    $("#form").reset();
-    $("#refNo").value=""; $("#group").value="";
-    toast("บันทึกเรียบร้อย ✓");
-    document.querySelector("#q1 input").focus();
-  }catch(err){ toast("บันทึกไม่สำเร็จ: "+err.message, true); }
-  btn.disabled=false; btn.textContent="บันทึกข้อมูล";
-});
-document.addEventListener("keydown", e=>{ if((e.ctrlKey||e.metaKey)&&e.key==="Enter") $("#form").requestSubmit(); });
+        // 4. Update Dashboard UI
+        function updateDashboard(data) {
+            const totalCount = data.length;
+            document.getElementById('stat-total').textContent = totalCount.toLocaleString();
 
-/* ---------- เรียลไทม์ ---------- */
-let DATA=[];
-db.collection(COL).orderBy("createdAt","desc").onSnapshot(
-  s=>{ connected=true; DATA = s.docs.map(d=>({id:d.id,...d.data()})); $("#conn").innerHTML='<span class="dot"></span>เชื่อมต่อแล้ว · ซิงก์อัตโนมัติ'; render(); },
-  e=>{ connected=true; fail("เชื่อมต่อไม่ได้ ("+e.code+"): "+e.message); }
-);
+            if (totalCount === 0) return;
 
-function bars(el, items, total){
-  el.innerHTML = items.map(([lab,n])=>{
-    const p = total? n*100/total : 0;
-    return `<div class="bar"><i>${lab}</i><div class="t"><div style="width:${p}%"></div></div><u>${n} (${p.toFixed(1)}%)</u></div>`;
-  }).join("");
-}
-function mean(key){ const v=DATA.map(d=>d[key]).filter(x=>typeof x==="number"); return v.length? v.reduce((a,b)=>a+b,0)/v.length : 0; }
-function sd(key,m){ const v=DATA.map(d=>d[key]).filter(x=>typeof x==="number"); if(v.length<2) return 0;
-  return Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/(v.length-1)); }
-function interp(m){ return m>=4.51?"มากที่สุด":m>=3.51?"มาก":m>=2.51?"ปานกลาง":m>=1.51?"น้อย":"น้อยที่สุด"; }
+            // Q1: Awareness
+            const awareCount = data.filter(d => d.q1_awareness === 'ทราบ').length;
+            const awarePercent = Math.round((awareCount / totalCount) * 100);
+            document.getElementById('stat-aware-percent').textContent = `${awarePercent}%`;
+            document.getElementById('stat-aware-bar').style.width = `${awarePercent}%`;
 
-function render(){
-  const n=DATA.length;
-  $("#sTotal").textContent=n;
-  $("#sMine").textContent=DATA.filter(d=>d.staff===staff).length;
-  const m2=mean("q2"), m3=mean("q3");
-  $("#sAvg").textContent=m2.toFixed(2);
-  bars($("#b1"), [["ทราบ",DATA.filter(d=>d.q1===1).length],["ไม่ทราบ",DATA.filter(d=>d.q1===0).length]], n);
-  bars($("#b2"), [5,4,3,2,1].map(v=>[LBL[v],DATA.filter(d=>d.q2===v).length]), n);
-  bars($("#b3"), [5,4,3,2,1].map(v=>[LBL[v],DATA.filter(d=>d.q3===v).length]), n);
-  $("#m2").textContent=`(x̄ = ${m2.toFixed(2)}, S.D. = ${sd("q2",m2).toFixed(2)} — ${interp(m2)})`;
-  $("#m3").textContent=`(x̄ = ${m3.toFixed(2)}, S.D. = ${sd("q3",m3).toFixed(2)} — ${interp(m3)})`;
-  $("#rows").innerHTML = DATA.slice(0,300).map((d,i)=>
-    `<tr><td>${n-i}</td><td>${d.group||"-"}</td><td>${d.q1===1?"ทราบ":"ไม่ทราบ"}</td><td>${LBL[d.q2]||"-"}</td><td>${LBL[d.q3]||"-"}</td><td>${d.staff||"-"}</td></tr>`).join("")
-    || `<tr><td colspan="6" style="text-align:center;color:#888">ยังไม่มีข้อมูล</td></tr>`;
-  const c = DATA.filter(d=>d.q4);
-  $("#cmts").innerHTML = c.length? c.map((d,i)=>`<p style="margin:8px 0;font-size:14px">${i+1}. ${esc(d.q4)} <span class="mini">— ${esc(d.group||"ไม่ระบุกลุ่ม")}</span></p>`).join("")
-    : `<p class="mini" style="text-align:center;padding:18px">ยังไม่มีข้อเสนอแนะ</p>`;
-}
-const esc = s => String(s).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));
+            // Q2 & Q3: Averages
+            let sumSat = 0, sumBen = 0;
+            data.forEach(d => {
+                sumSat += d.q2_satisfaction || 0;
+                sumBen += d.q3_benefit || 0;
+            });
+            
+            const avgSat = (sumSat / totalCount).toFixed(2);
+            const avgBen = (sumBen / totalCount).toFixed(2);
+            
+            document.getElementById('stat-sat-avg').textContent = avgSat;
+            document.getElementById('stat-ben-avg').textContent = avgBen;
 
-/* ---------- แท็บ ---------- */
-document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
-  b.classList.add("on");
-  ["sum","list","cmt"].forEach(t=>$("#tab-"+t).hidden = (t!==b.dataset.tab));
-});
+            // Suggestions List
+            const suggestionsList = document.getElementById('list-suggestions');
+            const validSuggestions = data.filter(d => d.q4_suggestion && d.q4_suggestion.length > 2);
+            
+            if (validSuggestions.length > 0) {
+                // Take top 5 recent suggestions
+                const recentSuggestions = validSuggestions.slice(0, 5);
+                suggestionsList.innerHTML = recentSuggestions.map(d => `
+                    <li class="bg-white p-3 rounded-lg border border-slate-100 shadow-sm flex items-start gap-2">
+                        <i data-lucide="message-square-quote" class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0"></i>
+                        <span class="line-clamp-2">${escapeHTML(d.q4_suggestion)}</span>
+                    </li>
+                `).join('');
+                lucide.createIcons();
+            } else {
+                suggestionsList.innerHTML = '<li class="text-center text-slate-400 italic py-2">ยังไม่มีข้อเสนอแนะ</li>';
+            }
+        }
 
-/* ---------- Export XLSX ---------- */
-const fmtDate = ts => ts&&ts.toDate ? ts.toDate().toLocaleString("th-TH") : "";
-$("#btnXlsx").onclick = ()=>{
-  if(!DATA.length) return toast("ยังไม่มีข้อมูลให้ส่งออก", true);
-  const rows = DATA.slice().reverse().map((d,i)=>({
-    "ลำดับ":i+1, "เลขที่ฉบับ":d.refNo||"", "กลุ่มผู้ตอบ":d.group||"",
-    "ข้อ1 การรับรู้":d.q1===1?"ทราบ":"ไม่ทราบ",
-    "ข้อ2 ความพึงพอใจ (คะแนน)":d.q2, "ข้อ2 ระดับ":LBL[d.q2]||"",
-    "ข้อ3 ประโยชน์ (คะแนน)":d.q3, "ข้อ3 ระดับ":LBL[d.q3]||"",
-    "ข้อ4 ข้อเสนอแนะ":d.q4||"", "ผู้บันทึก":d.staff||"", "เวลาบันทึก":fmtDate(d.createdAt)
-  }));
-  const m2=mean("q2"), m3=mean("q3"), n=DATA.length;
-  const sum = [
-    {"รายการ":"จำนวนผู้ตอบทั้งหมด (ฉบับ)","ค่า":n,"หมายเหตุ":""},
-    {"รายการ":"ข้อ 1 ทราบ","ค่า":DATA.filter(d=>d.q1===1).length,"หมายเหตุ":(n?(DATA.filter(d=>d.q1===1).length*100/n).toFixed(2):0)+"%"},
-    {"รายการ":"ข้อ 1 ไม่ทราบ","ค่า":DATA.filter(d=>d.q1===0).length,"หมายเหตุ":(n?(DATA.filter(d=>d.q1===0).length*100/n).toFixed(2):0)+"%"},
-    ...[5,4,3,2,1].map(v=>({"รายการ":"ข้อ 2 "+LBL[v],"ค่า":DATA.filter(d=>d.q2===v).length,"หมายเหตุ":(n?(DATA.filter(d=>d.q2===v).length*100/n).toFixed(2):0)+"%"})),
-    {"รายการ":"ข้อ 2 ค่าเฉลี่ย (x̄)","ค่า":+m2.toFixed(2),"หมายเหตุ":interp(m2)},
-    {"รายการ":"ข้อ 2 ส่วนเบี่ยงเบนมาตรฐาน (S.D.)","ค่า":+sd("q2",m2).toFixed(2),"หมายเหตุ":""},
-    ...[5,4,3,2,1].map(v=>({"รายการ":"ข้อ 3 "+LBL[v],"ค่า":DATA.filter(d=>d.q3===v).length,"หมายเหตุ":(n?(DATA.filter(d=>d.q3===v).length*100/n).toFixed(2):0)+"%"})),
-    {"รายการ":"ข้อ 3 ค่าเฉลี่ย (x̄)","ค่า":+m3.toFixed(2),"หมายเหตุ":interp(m3)},
-    {"รายการ":"ข้อ 3 ส่วนเบี่ยงเบนมาตรฐาน (S.D.)","ค่า":+sd("q3",m3).toFixed(2),"หมายเหตุ":""}
-  ];
-  const wb = XLSX.utils.book_new();
-  const s1 = XLSX.utils.json_to_sheet(rows); s1["!cols"]=[{wch:6},{wch:12},{wch:16},{wch:14},{wch:18},{wch:12},{wch:18},{wch:12},{wch:48},{wch:20},{wch:20}];
-  XLSX.utils.book_append_sheet(wb, s1, "ข้อมูลรายฉบับ");
-  const s2 = XLSX.utils.json_to_sheet(sum); s2["!cols"]=[{wch:36},{wch:10},{wch:14}];
-  XLSX.utils.book_append_sheet(wb, s2, "สรุปผล");
-  const s3 = XLSX.utils.json_to_sheet(DATA.filter(d=>d.q4).map((d,i)=>({"ลำดับ":i+1,"กลุ่มผู้ตอบ":d.group||"","ข้อเสนอแนะ":d.q4})));
-  s3["!cols"]=[{wch:6},{wch:16},{wch:80}];
-  XLSX.utils.book_append_sheet(wb, s3, "ข้อเสนอแนะ");
-  XLSX.writeFile(wb, "สรุปแบบสอบถาม_CPALL_"+new Date().toISOString().slice(0,10)+".xlsx");
-  toast("ส่งออก Excel แล้ว ✓");
-};
+        // 5. Export Functions
+        
+        // Export to Excel using SheetJS
+        window.exportToExcel = function() {
+            if (currentSurveyData.length === 0) {
+                showToast("ไม่มีข้อมูลสำหรับส่งออก", "error");
+                return;
+            }
 
-/* ---------- รายงาน PDF (พิมพ์) ---------- */
-$("#btnPdf").onclick = ()=>{
-  if(!DATA.length) return toast("ยังไม่มีข้อมูลให้ออกรายงาน", true);
-  const n=DATA.length, m2=mean("q2"), m3=mean("q3"), s2v=sd("q2",m2), s3v=sd("q3",m3);
-  const pct = k => (n? k*100/n : 0).toFixed(2);
-  const tbl = (title,key) => `
-  <table class="rt"><caption>${title}</caption>
-  <thead><tr><th style="width:34%">ระดับความคิดเห็น</th><th>จำนวน (คน)</th><th>ร้อยละ</th></tr></thead><tbody>
-  ${[5,4,3,2,1].map(v=>{const c=DATA.filter(d=>d[key]===v).length;
-     return `<tr><td>${LBL[v]}</td><td class="c">${c}</td><td class="c">${pct(c)}</td></tr>`}).join("")}
-  <tr class="tot"><td>รวม</td><td class="c">${n}</td><td class="c">100.00</td></tr>
-  </tbody></table>`;
-  const q1y=DATA.filter(d=>d.q1===1).length, q1n=DATA.filter(d=>d.q1===0).length;
-  const cmts = DATA.filter(d=>d.q4);
-  const today = new Date().toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"});
-  const w = window.open("","_blank");
-  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">
-  <title>รายงานสรุปผลแบบสอบถาม CPALL</title>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-   @page{size:A4;margin:2.54cm 2cm 2cm 3cm}
-   body{font-family:"Sarabun",sans-serif;font-size:16pt;color:#000;line-height:1.5}
-   h1{font-size:18pt;text-align:center;margin:0 0 4px}
-   h2{font-size:16pt;margin:18px 0 6px}
-   .sub{text-align:center;font-size:16pt;margin:0 0 18px}
-   p{text-indent:1.27cm;margin:6px 0;text-align:justify}
-   table.rt{width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:15pt}
-   table.rt caption{text-align:left;font-weight:600;margin-bottom:5px;font-size:16pt}
-   table.rt th,table.rt td{border:1px solid #000;padding:4px 8px}
-   table.rt th{background:#eee;text-align:center}
-   .c{text-align:center}
-   .tot td{font-weight:600}
-   ol{padding-left:1.6cm} ol li{margin:3px 0}
-   .sign{margin-top:44px;text-align:center;float:right;width:46%}
-  </style></head><body>
-  <h1>รายงานสรุปผลแบบสอบถาม</h1>
-  <p class="sub">ความพึงพอใจต่อโครงการที่ได้รับการสนับสนุนจาก<br>บริษัท ซีพี ออลล์ จำกัด (มหาชน)</p>
-  <p>รายงานฉบับนี้จัดทำขึ้นเพื่อสรุปผลการสอบถามการรับรู้ ความพึงพอใจ และข้อเสนอแนะที่มีต่อการดำเนินโครงการ โดยเก็บรวบรวมข้อมูลจากผู้ตอบแบบสอบถาม จำนวนทั้งสิ้น ${n} คน ประมวลผลข้อมูล ณ วันที่ ${today}</p>
-  <h2>ตอนที่ 1 การรับรู้ผู้สนับสนุนโครงการ</h2>
-  <table class="rt"><caption>ตารางที่ 1 การรับรู้ว่าบริษัท ซีพี ออลล์ จำกัด (มหาชน) เป็นผู้สนับสนุนโครงการ</caption>
-  <thead><tr><th style="width:34%">การรับรู้</th><th>จำนวน (คน)</th><th>ร้อยละ</th></tr></thead><tbody>
-  <tr><td>ทราบ</td><td class="c">${q1y}</td><td class="c">${pct(q1y)}</td></tr>
-  <tr><td>ไม่ทราบ</td><td class="c">${q1n}</td><td class="c">${pct(q1n)}</td></tr>
-  <tr class="tot"><td>รวม</td><td class="c">${n}</td><td class="c">100.00</td></tr></tbody></table>
-  <p>จากตารางที่ 1 พบว่า ผู้ตอบแบบสอบถามส่วนใหญ่${q1y>=q1n?"ทราบ":"ไม่ทราบ"}ว่าบริษัท ซีพี ออลล์ จำกัด (มหาชน) เป็นผู้สนับสนุนโครงการ คิดเป็นร้อยละ ${pct(Math.max(q1y,q1n))}</p>
-  <h2>ตอนที่ 2 ความพึงพอใจที่มีต่อโครงการ</h2>
-  ${tbl("ตารางที่ 2 ระดับความพึงพอใจที่มีต่อโครงการ","q2")}
-  <p>จากตารางที่ 2 พบว่า ผู้ตอบแบบสอบถามมีความพึงพอใจต่อโครงการโดยรวมอยู่ในระดับ${interp(m2)} (x̄ = ${m2.toFixed(2)}, S.D. = ${s2v.toFixed(2)})</p>
-  <h2>ตอนที่ 3 ประโยชน์ที่ได้รับจากโครงการ</h2>
-  ${tbl("ตารางที่ 3 ระดับประโยชน์ที่ได้รับจากโครงการ","q3")}
-  <p>จากตารางที่ 3 พบว่า ผู้ตอบแบบสอบถามได้รับประโยชน์จากโครงการอยู่ในระดับ${interp(m3)} (x̄ = ${m3.toFixed(2)}, S.D. = ${s3v.toFixed(2)})</p>
-  <h2>ตอนที่ 4 ข้อเสนอแนะที่มีต่อโครงการ</h2>
-  ${cmts.length? "<ol>"+cmts.map(d=>`<li>${esc(d.q4)}</li>`).join("")+"</ol>" : "<p>ไม่มีผู้ให้ข้อเสนอแนะเพิ่มเติม</p>"}
-  <div class="sign">ลงชื่อ ...............................................<br>(...............................................)<br>ผู้รายงาน</div>
-  </body></html>`);
-  w.document.close();
-  w.onload = ()=> setTimeout(()=>w.print(), 600);
-};
-</script>
+            try {
+                // Prepare Data mapping for Excel
+                const exportData = currentSurveyData.map((d, index) => ({
+                    "ลำดับ": index + 1,
+                    "วันที่บันทึก": new Date(d.timestamp).toLocaleString('th-TH'),
+                    "1. ทราบว่าเป็นผู้สนับสนุน": d.q1_awareness,
+                    "2. ความพึงพอใจ (1-5)": d.q2_satisfaction,
+                    "3. ประโยชน์ที่ได้รับ (1-5)": d.q3_benefit,
+                    "4. ข้อเสนอแนะ": d.q4_suggestion || "-"
+                }));
+
+                // Create Workbook
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                
+                // Adjust column widths
+                const wscols = [
+                    {wch: 8}, {wch: 20}, {wch: 25}, {wch: 20}, {wch: 22}, {wch: 50}
+                ];
+                ws['!cols'] = wscols;
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "ข้อมูลแบบสอบถาม");
+
+                // Generate filename
+                const dateStr = new Date().toISOString().split('T')[0];
+                const fileName = `CPALL_Survey_Data_${dateStr}.xlsx`;
+
+                // Save
+                XLSX.writeFile(wb, fileName);
+                showToast("สร้างไฟล์ Excel สำเร็จ", "success");
+            } catch (error) {
+                console.error("Excel Export Error:", error);
+                showToast("เกิดข้อผิดพลาดในการส่งออก Excel", "error");
+            }
+        };
+
+        // Export to PDF using html2pdf
+        window.exportToPDF = function() {
+            if (currentSurveyData.length === 0) {
+                showToast("ไม่มีข้อมูลสำหรับสร้างรายงาน", "error");
+                return;
+            }
+
+            try {
+                showToast("กำลังสร้างเอกสาร PDF...", "success");
+
+                // Update PDF template with current stats
+                const now = new Date().toLocaleDateString('th-TH', { 
+                    year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                
+                document.getElementById('pdf-date').textContent = `พิมพ์เมื่อ: ${now}`;
+                document.getElementById('pdf-footer-date').textContent = now;
+                
+                document.getElementById('pdf-total').textContent = document.getElementById('stat-total').textContent;
+                document.getElementById('pdf-aware').textContent = document.getElementById('stat-aware-percent').textContent;
+                document.getElementById('pdf-sat').textContent = document.getElementById('stat-sat-avg').textContent;
+                document.getElementById('pdf-ben').textContent = document.getElementById('stat-ben-avg').textContent;
+
+                // Populate PDF suggestions (max 10 for report)
+                const pdfSuggestionsEl = document.getElementById('pdf-suggestions');
+                const validSuggestions = currentSurveyData.filter(d => d.q4_suggestion && d.q4_suggestion.length > 2);
+                if (validSuggestions.length > 0) {
+                    pdfSuggestionsEl.innerHTML = validSuggestions.slice(0, 10).map(d => 
+                        `<li>${escapeHTML(d.q4_suggestion)}</li>`
+                    ).join('');
+                } else {
+                    pdfSuggestionsEl.innerHTML = '<li class="text-slate-500 italic">ไม่มีข้อเสนอแนะ</li>';
+                }
+
+                // Generate PDF
+                const element = document.getElementById('pdf-content');
+                const opt = {
+                    margin:       10,
+                    filename:     `CPALL_Report_${new Date().getTime()}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(opt).from(element).save().then(() => {
+                    showToast("ดาวน์โหลด PDF สำเร็จ", "success");
+                });
+
+            } catch (error) {
+                console.error("PDF Export Error:", error);
+                showToast("เกิดข้อผิดพลาดในการสร้าง PDF", "error");
+            }
+        };
+
+        // 6. Utility Functions
+        
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const isSuccess = type === 'success';
+            const bgColor = isSuccess ? 'bg-green-600' : 'bg-red-600';
+            const icon = isSuccess ? 'check-circle' : 'alert-circle';
+            
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 toast-enter min-w-[250px]`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-5 h-5 text-white"></i>
+                <span class="font-medium">${escapeHTML(message)}</span>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+            
+            // Auto remove after 3s
+            setTimeout(() => {
+                toast.classList.replace('toast-enter', 'toast-exit');
+                setTimeout(() => toast.remove(), 300); // Wait for exit animation
+            }, 3000);
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        // Boot up
+        initApp();
+
+    </script>
 </body>
 </html>
